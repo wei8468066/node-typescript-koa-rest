@@ -1,20 +1,20 @@
-import Koa from "koa";
-import jwt from "koa-jwt";
-import bodyParser from "koa-bodyparser";
-import helmet from "koa-helmet";
-import cors from "@koa/cors";
-import winston from "winston";
-import { createConnection, ConnectionOptions } from "typeorm";
-import "reflect-metadata";
+import Koa from 'koa';
+import jwt from 'koa-jwt';
+import bodyParser from 'koa-bodyparser';
+import helmet from 'koa-helmet';
+import cors from '@koa/cors';
+import winston from 'winston';
+import { createConnection, ConnectionOptions } from 'typeorm';
+import 'reflect-metadata';
 
-import { logger } from "./logger";
-import { config } from "./config";
-import { unprotectedRouter } from "./unprotectedRoutes";
-import { protectedRouter } from "./protectedRoutes";
-import { cron } from "./cron";
+import { logger } from './logger';
+import { config } from './config';
+import { unprotectedRouter } from './unprotectedRoutes';
+import { protectedRouter } from './protectedRoutes';
+import { cron } from './cron';
 
 const connectionOptions: ConnectionOptions = {
-    type: "postgres",
+    type: 'postgres',
     url: config.databaseUrl,
     synchronize: true,
     logging: false,
@@ -38,11 +38,11 @@ createConnection(connectionOptions).then(async () => {
     // Provides important security headers to make your app more secure
     app.use(helmet.contentSecurityPolicy({
         directives:{
-          defaultSrc:["'self'"],
-          scriptSrc:["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
-          styleSrc:["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com", "fonts.googleapis.com"],
-          fontSrc:["'self'","fonts.gstatic.com"],
-          imgSrc:["'self'", "data:", "online.swagger.io", "validator.swagger.io"]
+          defaultSrc:['\'self\''],
+          scriptSrc:['\'self\'', '\'unsafe-inline\'', 'cdnjs.cloudflare.com'],
+          styleSrc:['\'self\'', '\'unsafe-inline\'', 'cdnjs.cloudflare.com', 'fonts.googleapis.com'],
+          fontSrc:['\'self\'','fonts.gstatic.com'],
+          imgSrc:['\'self\'', 'data:', 'online.swagger.io', 'validator.swagger.io']
         }
     }));
 
@@ -72,4 +72,4 @@ createConnection(connectionOptions).then(async () => {
         console.log(`Server running on port ${config.port}`);
     });
 
-}).catch((error: string) => console.log("TypeORM connection error: ", error));
+}).catch((error: string) => console.log('TypeORM connection error: ', error));
