@@ -12,6 +12,20 @@
     "quotes": ["error", "single", {
       "allowTemplateLiterals": true
     }],
+    "array-bracket-spacing": ["error", "always"],
+    // if while function 后面的{必须与if在同一行，java风格。
+    "brace-style": ["error", "1tbs", { "allowSingleLine": true }],
+    // 数组和对象键值对最后一个逗号， never参数：不能带末尾的逗号, always参数：必须带末尾的逗号，
+    // always-multiline：多行模式必须带逗号，单行模式不能带逗号
+    "comma-dangle": ["error", "always-multiline"],
+    // 控制逗号前后的空格
+    "comma-spacing": [2, { "before": false, "after": true }],
+    //缩进风格
+    "indent": ["error", 2],
+    //对象字面量中冒号的前后空格
+    "key-spacing": ["error", { "beforeColon": false, "afterColon": true }],
+    //大括号内是否允许不必要的空格
+    "object-curly-spacing": ["error", "always"],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": 1,
     "@typescript-eslint/no-inferrable-types": [
