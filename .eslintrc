@@ -9,7 +9,9 @@
   },
   "rules": {
     "semi": ["error", "always"],
-    "quotes": ["error", "single"],
+    "quotes": ["error", "single", {
+      "allowTemplateLiterals": true
+    }],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": 1,
     "@typescript-eslint/no-inferrable-types": [
