@@ -46,7 +46,7 @@ describe('User controller', () => {
     it('getUsers should return status 200 and found users.', async () => {
         const userRepository = {find: jest.fn().mockReturnValue([user])};
         (getManager as jest.Mock).mockReturnValue({ getRepository: () => userRepository });
-        const context = {status: undefined, body: undefined} as Context;
+        const context = { status: undefined, body: undefined } as unknown as Context;
         await UserController.getUsers(context);
         expect(userRepository.find).toHaveBeenCalledTimes(1);
         expect(context.status).toBe(200);
@@ -74,7 +74,7 @@ describe('User controller', () => {
     });
 
     it('createUser should return status 201 if is created.', async () => {
-        const userRepository = {save: jest.fn().mockReturnValue(user), findOne: () => undefined as User };
+        const userRepository = {save: jest.fn().mockReturnValue(user), findOne: () => undefined as unknown as User };
         (getManager as jest.Mock).mockReturnValue({ getRepository: () => userRepository });
         (validate as jest.Mock).mockReturnValue([]);
         const context = {status: undefined, body: undefined, request : {body: user} } as unknown as Context;
@@ -85,7 +85,7 @@ describe('User controller', () => {
     });
 
     it('createUser should return status 400 if there are validation errors.', async () => {
-        const userRepository = {save: jest.fn().mockReturnValue(user), findOne: () => undefined as User };
+        const userRepository = {save: jest.fn().mockReturnValue(user), findOne: () => undefined as unknown as User };
         (getManager as jest.Mock).mockReturnValue({ getRepository: () => userRepository });
         (validate as jest.Mock).mockReturnValue(['email validation error']);
         const context = {status: undefined, body: undefined, request : {body: user} } as unknown as Context;
@@ -107,7 +107,7 @@ describe('User controller', () => {
     });
 
     it('updateUser should return 201 if user is updated.', async () => {
-        const userRepository = {findOne: jest.fn().mockReturnValueOnce(user).mockReturnValueOnce(undefined as User), save: jest.fn().mockReturnValue(user)};
+        const userRepository = {findOne: jest.fn().mockReturnValueOnce(user).mockReturnValueOnce(undefined as unknown as User), save: jest.fn().mockReturnValue(user)};
         (getManager as jest.Mock).mockReturnValue({ getRepository: () => userRepository });
         (validate as jest.Mock).mockReturnValue([]);
         const context = {status: undefined, body: undefined, params: {id : 0}, request : {body: user} } as unknown as Context;
@@ -130,7 +130,7 @@ describe('User controller', () => {
     });
 
     it('updateUser should return 400 if user does not exist.', async () => {
-        const userRepository = {findOne: jest.fn().mockReturnValue(undefined as User) };
+        const userRepository = {findOne: jest.fn().mockReturnValue(undefined as unknown as User) };
         (getManager as jest.Mock).mockReturnValue({ getRepository: () => userRepository });
         (validate as jest.Mock).mockReturnValue([]);
         const context = {status: undefined, body: undefined, params: {id : 0}, request : {body: user} } as unknown as Context;
@@ -152,7 +152,7 @@ describe('User controller', () => {
     });
 
     it('deleteUser should return status 400 if user does not exists.', async () => {
-        const userRepository = { remove: jest.fn().mockReturnValue(undefined),findOne: () => undefined as User };
+        const userRepository = { remove: jest.fn().mockReturnValue(undefined),findOne: () => undefined as unknown as User };
         (getManager as jest.Mock).mockReturnValue({ getRepository: () => userRepository });
         const context = {status: undefined, body: undefined, params: {id: 0}, state: {user: user }} as unknown as Context;
         await UserController.deleteUser(context);
