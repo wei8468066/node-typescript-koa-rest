@@ -4,7 +4,7 @@
   "description": "API REST using NodeJS and KOA framework, typescript. TypeORM for SQL with class-validators. Middlewares JWT, CORS, Winston Logger. Swagger API docs",
   "main": "dist/server.js",
   "scripts": {
-    "watch-server": "nodemon --ignore tests/ --watch src -e ts,tsx --exec ts-node src/server.ts",
+    "dev": "nodemon --ignore tests/ --watch src -e ts,tsx --exec ts-node src/server.ts",
     "build-ts": "tsc",
     "copy-static-assets": "ts-node copyStaticAssets.ts",
     "lint": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",

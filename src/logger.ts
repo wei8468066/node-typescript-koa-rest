@@ -1,5 +1,5 @@
 import { Context } from 'koa';
-import { config } from './config';
+import config from './config/config';
 import { transports, format } from 'winston';
 import * as path from 'path';
 
