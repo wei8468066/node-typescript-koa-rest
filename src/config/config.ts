@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
+import { DataSourceOptions } from 'typeorm';
 
 // 默认开发环境
 process.env.NODE_ENV = process.env.NODE_ENV || 'local';
@@ -27,9 +28,12 @@ const config = {
 
   // 数据库配置
   mongodb: {
-    databaseUrl: 'postgres://user:pass@localhost:5432/apidb',
-    dbEntitiesPath: [ './entity/**/*.ts' ],
-  },
+    type: 'mongodb',
+    host: 'localhost',
+    port: 27017,
+    database: 'koa-demo',
+    logging: false,
+  } as DataSourceOptions,
 
   // 定时任务配置
   cronJobExpression: '0 * * * *',

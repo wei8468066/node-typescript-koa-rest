@@ -10,47 +10,64 @@ import { logger } from './logger';
 import config from './config/config';
 import { unprotectedRouter } from './unprotectedRoutes';
 import { protectedRouter } from './protectedRoutes';
-import { cron } from './cron';
+import { cron } from './cron_job';
+import mongo from './datasource';
 
-// console.log(config);
+// 一些组件的初始化
+async function componentsInit() {
+  await mongo.initialize();
+}
 
-const app = new Koa();
+componentsInit()
+  .then(() => {
+    const app = new Koa();
+    // Provides important security headers to make your app more secure
+    app.use(helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: [ `'self'` ],
+        scriptSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com' ],
+        styleSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com', 'fonts.googleapis.com' ],
+        fontSrc: [ `'self'`, 'fonts.gstatic.com' ],
+        imgSrc: [ `'self'`, 'data:', 'online.swagger.io', 'validator.swagger.io' ],
+      },
+    }));
 
-// Provides important security headers to make your app more secure
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: [ `'self'` ],
-    scriptSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com' ],
-    styleSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com', 'fonts.googleapis.com' ],
-    fontSrc: [ `'self'`, 'fonts.gstatic.com' ],
-    imgSrc: [ `'self'`, 'data:', 'online.swagger.io', 'validator.swagger.io' ],
-  },
-}));
+    // Enable cors with default options
+    app.use(cors());
 
-// Enable cors with default options
-app.use(cors());
+    // Logger middleware -> use winston as logger (logging.ts with config)
+    app.use(logger(winston));
 
-// Logger middleware -> use winston as logger (logging.ts with config)
-app.use(logger(winston));
+    // Enable bodyParser with default options
+    app.use(bodyParser());
 
-// Enable bodyParser with default options
-app.use(bodyParser());
+    // these routes are NOT protected by the JWT middleware, also include middleware to respond with "Method Not Allowed - 405".
+    app.use(unprotectedRouter.routes()).use(unprotectedRouter.allowedMethods());
 
-// these routes are NOT protected by the JWT middleware, also include middleware to respond with "Method Not Allowed - 405".
-app.use(unprotectedRouter.routes()).use(unprotectedRouter.allowedMethods());
+    // JWT middleware -> below this line routes are only reached if JWT token is valid, secret as env variable
+    // do not protect swagger-json and swagger-html endpoints
+    app.use(jwt({ secret: config.jwtSecret }).unless({ path: [ /^\/swagger-/ ] }));
 
-// JWT middleware -> below this line routes are only reached if JWT token is valid, secret as env variable
-// do not protect swagger-json and swagger-html endpoints
-app.use(jwt({ secret: config.jwtSecret }).unless({ path: [ /^\/swagger-/ ] }));
+    // These routes are protected by the JWT middleware, also include middleware to respond with "Method Not Allowed - 405".
+    app.use(protectedRouter.routes()).use(protectedRouter.allowedMethods());
 
-// These routes are protected by the JWT middleware, also include middleware to respond with "Method Not Allowed - 405".
-app.use(protectedRouter.routes()).use(protectedRouter.allowedMethods());
+    // Register cron job to do any action needed
+    cron.start();
 
-// Register cron job to do any action needed
-cron.start();
-
-app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
-});
-
+    app.listen(config.port, () => {
+      console.log(`Server running on port ${config.port}`);
+    });
   
+  })
+  .catch(error => {
+    // 启动报错
+    console.log('init error! will quit!', error);
+    componentsDestory()
+      .then(() => {
+        process.exit(1);
+      });
+  });
+
+async function componentsDestory() {
+  mongo.destroy();
+}
