@@ -1,7 +1,8 @@
-import * as _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
 import { DataSourceOptions } from 'typeorm';
+import jwt from 'koa-jwt';
+import winston, { LoggerOptions, format } from 'winston';
 
 // 默认开发环境
 process.env.NODE_ENV = process.env.NODE_ENV || 'local';
@@ -15,16 +16,41 @@ if (fs.existsSync(envConfigPath)) {
   envConfig = require(envConfigPath).default;
 }
 
+const appName = 'demo-pro';
+
 // 配置项
 const config = {
   // 启动端口
   port: 3000,
 
+  isProd: false,
+
   // 调试日志
   debugLogging: true,
 
-  // jwt密钥
-  jwtSecret: 'your-secret-whatever',
+  logger: {
+    format: format.combine(
+      format.timestamp(),
+      format.printf((option) => {
+        return `${option.timestamp} [${option.level.toUpperCase()}] ${option.message}`;
+      }),
+    ),
+    defaultMeta: { service: appName },
+    transports: [
+    //
+    // - Write all logs with importance level of `error` or less to `error.log`
+    // - Write all logs with importance level of `info` or less to `combined.log`
+    //
+      new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+      new winston.transports.File({ filename: 'logs/combined.log' }),
+    ],
+  } as LoggerOptions,
+
+  jwt: {
+    // jwt密钥
+    secret: 'your-secret-whatever',
+    passthrough: true,
+  } as jwt.Options,
 
   // 数据库配置
   mongodb: {
