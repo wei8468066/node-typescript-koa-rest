@@ -91,4 +91,5 @@ componentsInit()
 // 执行最后的清理工作，如kafka消费暂停，数据库断开等
 async function shutdownWork() {
   await mongo.destroy();
+  console.log('mongodb disconnected!!!');
 }
