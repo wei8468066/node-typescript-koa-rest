@@ -57,6 +57,7 @@ componentsInit()
 
     server = app.listen(config.port, () => {
       console.log(`process id:`, process.pid);
+      console.log(`NODE_ENV:`, process.env.NODE_ENV);
       console.log(`Server running on port ${config.port}`);
     });
     // 生产需实现优雅停机

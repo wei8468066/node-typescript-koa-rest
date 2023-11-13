@@ -5,7 +5,6 @@ import jwt from 'koa-jwt';
 import winston, { LoggerOptions, format } from 'winston';
 
 // 默认开发环境
-process.env.NODE_ENV = process.env.NODE_ENV || 'local';
 
 let envConfig;
 // 定义要检查的文件路径
