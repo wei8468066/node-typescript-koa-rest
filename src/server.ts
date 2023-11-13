@@ -70,10 +70,8 @@ componentsInit()
               console.log('server closed error!', error);
             }
             console.log('server closed successful!');
-            // 执行最后的清理工作，如kafka消费暂停，数据库断开等
-            mongo.destroy()
+            shutdownWork()
               .then(() => {
-                console.log('mongodb disconnected!!!');
                 process.exit(0);
               })
               .finally(() => {
@@ -89,3 +87,8 @@ componentsInit()
     console.log('init error! will quit!', error);
     process.exit(1);
   });
+
+// 执行最后的清理工作，如kafka消费暂停，数据库断开等
+async function shutdownWork() {
+  await mongo.destroy();
+}
