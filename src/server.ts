@@ -9,7 +9,7 @@ import traceLogger from './middleware/trace_logger';
 import config from './config/config';
 import { unprotectedRouter } from './unprotectedRoutes';
 import { protectedRouter } from './protectedRoutes';
-import { cron } from './cron_job';
+import { cron } from './schedule/cron_job';
 import mongo from './datasource';
 import { Server } from 'http';
 
@@ -56,23 +56,32 @@ componentsInit()
     cron.start();
 
     server = app.listen(config.port, () => {
+      console.log(`process id:`, process.pid);
       console.log(`Server running on port ${config.port}`);
     });
-  
+    // 注册优雅关闭
+    server.on('close', () => {
+      console.log(`server recived signal: close`);
+      // 执行一些例如断开数据库的操作
+    });
+    // 停机信号
+    const downSignal: Array<'SIGTERM' | 'SIGINT'> = [ 'SIGTERM', 'SIGINT' ];
+    downSignal.forEach(signal => {
+      process.on(signal, () => {
+        console.log(`process ${process.pid} recived signal:`, signal);
+        server.close((error) => {
+          if (error) {
+            console.log('server closed error!', error);
+            process.exit(1);
+          }
+          console.log('server closed successful!');
+          process.exit(0);
+        });
+      });
+    });
   })
   .catch(error => {
     // 启动报错
     console.log('init error! will quit!', error);
-    closeApp()
-      .catch((error) => {
-        console.log('app close error:', error);
-      })
-      .finally(() => {
-        process.exit(1);
-      });
+    process.exit(1);
   });
-
-async function closeApp() {
-  await server.close();
-  await mongo.destroy();
-}
