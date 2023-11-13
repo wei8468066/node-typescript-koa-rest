@@ -31,16 +31,14 @@ const config = {
   logger: {
     format: format.combine(
       format.timestamp(),
-      format.printf((option) => {
-        return `${option.timestamp} [${option.level.toUpperCase()}] ${option.message}`;
-      }),
+      // format.printf((option) => {
+      //   return `${option.timestamp} [${option.level.toUpperCase()}] ${option.message}, ${option.meta}`;
+      // }),
+      format.json(),
     ),
     defaultMeta: { service: appName },
     transports: [
-    //
-    // - Write all logs with importance level of `error` or less to `error.log`
-    // - Write all logs with importance level of `info` or less to `combined.log`
-    //
+      new winston.transports.Console({ debugStdout: true }),
       new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
       new winston.transports.File({ filename: 'logs/combined.log' }),
     ],

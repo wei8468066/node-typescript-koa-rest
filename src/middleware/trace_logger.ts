@@ -1,10 +1,19 @@
 import { Context, Middleware } from 'koa';
 import logger from '../lib/logger';
+import { v4 } from 'uuid';
 
 export default (): Middleware => {
   return async (ctx: Context, next: () => Promise<any>): Promise<void> => {
     const start = new Date().getTime();
-    logger.info(`[${ctx.ip}] ${ctx.method} ${ctx.originalUrl} ${JSON.stringify(ctx.query)}`);
+    ctx.traceId = v4();
+    logger.info('trace_log_request', { 
+      traceId: ctx.traceId,
+      ip: ctx.ip,
+      method: ctx.method, 
+      url: ctx.originalUrl,
+      query: ctx.query,
+      body: ctx.request.body,
+    });
     try {
       await next();
     } catch (err) {
@@ -12,14 +21,15 @@ export default (): Middleware => {
       ctx.body = err.message;
     }
     const ms = new Date().getTime() - start;
-    const msg = `[${ctx.ip}] ${ctx.method} ${ctx.originalUrl} ${ctx.status} ${ms}ms`;
-    if (ctx.status >= 500) {
-      logger.error(msg);
-    } else if (ctx.status >= 400) {
-      logger.warn(msg);
-    } else {
-      logger.info(msg);
-    }
+    logger.info('trace_log_response', {
+      traceId: ctx.traceId,
+      ip: ctx.ip,
+      method: ctx.method,
+      url: ctx.originalUrl,
+      query: ctx.query,
+      body: ctx.request.body,
+      ms,
+    });
   };
 
 };

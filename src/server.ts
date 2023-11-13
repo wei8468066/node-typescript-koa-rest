@@ -59,26 +59,30 @@ componentsInit()
       console.log(`process id:`, process.pid);
       console.log(`Server running on port ${config.port}`);
     });
-    // 注册优雅关闭
-    server.on('close', () => {
-      console.log(`server recived signal: close`);
-      // 执行一些例如断开数据库的操作
-    });
-    // 停机信号
-    const downSignal: Array<'SIGTERM' | 'SIGINT'> = [ 'SIGTERM', 'SIGINT' ];
-    downSignal.forEach(signal => {
-      process.on(signal, () => {
-        console.log(`process ${process.pid} recived signal:`, signal);
-        server.close((error) => {
-          if (error) {
-            console.log('server closed error!', error);
-            process.exit(1);
-          }
-          console.log('server closed successful!');
-          process.exit(0);
+    // 生产需实现优雅停机
+    if (config.isProd) {
+      const downSignal: Array<'SIGTERM' | 'SIGINT'> = [ 'SIGTERM', 'SIGINT' ];
+      downSignal.forEach(signal => {
+        process.on(signal, () => {
+          console.log(`process ${process.pid} recived signal:`, signal);
+          server.close((error) => {
+            if (error) {
+              console.log('server closed error!', error);
+            }
+            console.log('server closed successful!');
+            // 执行最后的清理工作，如kafka消费暂停，数据库断开等
+            mongo.destroy()
+              .then(() => {
+                console.log('mongodb disconnected!!!');
+                process.exit(0);
+              })
+              .finally(() => {
+                process.exit(1);
+              });
+          });
         });
       });
-    });
+    }
   })
   .catch(error => {
     // 启动报错
