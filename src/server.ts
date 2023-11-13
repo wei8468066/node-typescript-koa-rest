@@ -85,7 +85,7 @@ componentsInit()
   })
   .catch(error => {
     // 启动报错
-    console.log('init error! will quit!', error);
+    console.log('mongodb disconnected!!!', error);
     process.exit(1);
   });
 
