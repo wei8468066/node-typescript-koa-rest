@@ -23,7 +23,7 @@ async function initComponents() {
 // app初始化
 async function initApp() {
   const app = new Koa();
-  // Provides important security headers to make your app more secure
+  
   app.use(helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: [ `'self'` ],
@@ -40,11 +40,14 @@ async function initApp() {
 
   app.use(bodyParser());
 
-  app.use(unprotectedRouter.routes()).use(unprotectedRouter.allowedMethods());
+  app.use(unprotectedRouter.routes())
+    .use(unprotectedRouter.allowedMethods());
 
-  app.use(jwt(config.jwt).unless({ path: [ /^\/swagger-/ ] }));
+  app.use(jwt(config.jwt)
+    .unless({ path: [ /^\/swagger-/, /^\/login/ ] }));
 
-  app.use(protectedRouter.routes()).use(protectedRouter.allowedMethods());
+  app.use(protectedRouter.routes())
+    .use(protectedRouter.allowedMethods());
 
   server = app.listen(config.port, () => {
     console.log(`process id:`, process.pid);
@@ -62,8 +65,7 @@ async function startCron() {
 // 注册优雅停机
 async function initGracefulShutdown() {
   if (config.isProd) {
-    const downSignal: Array<'SIGTERM' | 'SIGINT'> = [ 'SIGTERM', 'SIGINT' ];
-    downSignal.forEach(signal => {
+    [ 'SIGTERM', 'SIGINT' ].forEach(signal => {
       process.on(signal, () => {
         console.log(`process ${process.pid} recived signal:`, signal);
         server.close((error) => {
@@ -87,7 +89,7 @@ async function initGracefulShutdown() {
   }
 }
 
-// 停机前的清理工作，如kafka消费暂停，数据库断开等
+// 停机前释放资源
 async function __shutdownWork() {
   await mongo.destroy();
 }
