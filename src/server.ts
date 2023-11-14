@@ -9,88 +9,95 @@ import traceLogger from './middleware/trace_logger';
 import config from './config/config';
 import { unprotectedRouter } from './unprotectedRoutes';
 import { protectedRouter } from './protectedRoutes';
-import { cron } from './schedule/cron_job';
 import mongo from './datasource';
 import { Server } from 'http';
-
-// 一些组件的初始化
-async function componentsInit() {
-  await mongo.initialize();
-  
-}
+import start from './schedule';
 
 let server: Server;
-componentsInit()
-  .then(() => {
-    const app = new Koa();
-    // Provides important security headers to make your app more secure
-    app.use(helmet.contentSecurityPolicy({
-      directives: {
-        defaultSrc: [ `'self'` ],
-        scriptSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com' ],
-        styleSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com', 'fonts.googleapis.com' ],
-        fontSrc: [ `'self'`, 'fonts.gstatic.com' ],
-        imgSrc: [ `'self'`, 'data:', 'online.swagger.io', 'validator.swagger.io' ],
-      },
-    }));
 
-    // Enable cors with default options
-    app.use(cors());
+// 一些组件的初始化
+async function initComponents() {
+  await mongo.initialize();
+}
 
-    // Logger middleware -> use winston as logger (logging.ts with config)
-    app.use(traceLogger());
+// app初始化
+async function initApp() {
+  const app = new Koa();
+  // Provides important security headers to make your app more secure
+  app.use(helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: [ `'self'` ],
+      scriptSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com' ],
+      styleSrc: [ `'self'`, `'unsafe-inline'`, 'cdnjs.cloudflare.com', 'fonts.googleapis.com' ],
+      fontSrc: [ `'self'`, 'fonts.gstatic.com' ],
+      imgSrc: [ `'self'`, 'data:', 'online.swagger.io', 'validator.swagger.io' ],
+    },
+  }));
 
-    // Enable bodyParser with default options
-    app.use(bodyParser());
+  app.use(cors());
 
-    // these routes are NOT protected by the JWT middleware, also include middleware to respond with "Method Not Allowed - 405".
-    app.use(unprotectedRouter.routes()).use(unprotectedRouter.allowedMethods());
+  app.use(traceLogger());
 
-    // jwt中间件拦截，注意不要拦截swagger
-    app.use(jwt(config.jwt).unless({ path: [ /^\/swagger-/ ] }));
+  app.use(bodyParser());
 
-    // These routes are protected by the JWT middleware, also include middleware to respond with "Method Not Allowed - 405".
-    app.use(protectedRouter.routes()).use(protectedRouter.allowedMethods());
+  app.use(unprotectedRouter.routes()).use(unprotectedRouter.allowedMethods());
 
-    // Register cron job to do any action needed
-    cron.start();
+  app.use(jwt(config.jwt).unless({ path: [ /^\/swagger-/ ] }));
 
-    server = app.listen(config.port, () => {
-      console.log(`process id:`, process.pid);
-      console.log(`NODE_ENV:`, process.env.NODE_ENV);
-      console.log(`Server running on port ${config.port}`);
-    });
-    // 生产需实现优雅停机
-    if (config.isProd) {
-      const downSignal: Array<'SIGTERM' | 'SIGINT'> = [ 'SIGTERM', 'SIGINT' ];
-      downSignal.forEach(signal => {
-        process.on(signal, () => {
-          console.log(`process ${process.pid} recived signal:`, signal);
-          server.close((error) => {
-            if (error) {
-              console.log('server closed error!', error);
-            }
-            console.log('server closed successful!');
-            shutdownWork()
-              .then(() => {
-                process.exit(0);
-              })
-              .finally(() => {
-                process.exit(1);
-              });
-          });
+  app.use(protectedRouter.routes()).use(protectedRouter.allowedMethods());
+
+  server = app.listen(config.port, () => {
+    console.log(`process id:`, process.pid);
+    console.log(`NODE_ENV:`, process.env.NODE_ENV);
+    console.log(`Server running on port ${config.port}`);
+  });
+}
+
+async function startCron() {
+  if (config.isProd) {
+    start();
+  }
+}
+
+// 注册优雅停机
+async function initGracefulShutdown() {
+  if (config.isProd) {
+    const downSignal: Array<'SIGTERM' | 'SIGINT'> = [ 'SIGTERM', 'SIGINT' ];
+    downSignal.forEach(signal => {
+      process.on(signal, () => {
+        console.log(`process ${process.pid} recived signal:`, signal);
+        server.close((error) => {
+          if (error) {
+            console.log('server closed error:', error);
+          } else {
+            console.log('server closed successful.');
+          }
+          __shutdownWork()
+            .then(() => {
+              console.log('components disconnected.');
+              process.exit(0);
+            })
+            .catch((error) => {
+              console.log('components disconnect error:', error);
+              process.exit(1);
+            });
         });
       });
-    }
-  })
+    });
+  }
+}
+
+// 停机前的清理工作，如kafka消费暂停，数据库断开等
+async function __shutdownWork() {
+  await mongo.destroy();
+}
+
+initComponents()
+  .then(initApp)
+  .then(startCron)
+  .then(initGracefulShutdown)
   .catch(error => {
     // 启动报错
-    console.log('mongodb disconnected!!!', error);
+    console.log('app init error:', error);
     process.exit(1);
   });
-
-// 执行最后的清理工作，如kafka消费暂停，数据库断开等
-async function shutdownWork() {
-  await mongo.destroy();
-  console.log('mongodb disconnected!!!');
-}
