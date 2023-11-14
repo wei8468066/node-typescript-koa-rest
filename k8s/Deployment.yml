@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: koa-demo
+  namespace: default
+  labels:
+    k8s-app: koa-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: koa-demo
+  template:
+    metadata:
+      name: koa-demo
+      labels:
+        k8s-app: koa-demo
+    spec:
+      containers:
+        - name: koa-demo
+          image: harbor.todesk.com:8443/todesk/todesk_common
+          env:
+            - name: NODE_ENV
+              value: prod
+          securityContext:
+            privileged: false
